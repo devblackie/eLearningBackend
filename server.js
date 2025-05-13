@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const cors = require('cors');
 const connectDB = require('./config/db');
 const setupWebSocket = require('./services/websocket');
 const authRoutes = require('./routes/auth');
@@ -12,6 +13,16 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration
+app.use(cors({
+    origin: [
+      'http://localhost:5173', // Allow local Vite dev server
+    //   'https://elearning-frontend.vercel.app' // Add your Vercel front-end URL
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }));
 
 // Middleware
 app.use(express.json());
