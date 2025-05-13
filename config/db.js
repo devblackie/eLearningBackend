@@ -3,7 +3,8 @@ const config = require('./config');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.databaseURI);
+    // const conn = await mongoose.connect(config.databaseURI);
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
   } catch (error) {
     console.error('MongoDB connection error:', error);
