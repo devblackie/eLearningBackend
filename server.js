@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const contentRoutes = require('./routes/content');
 const collaborationRoutes = require('./routes/collaboration');
 const analyticsRoutes = require('./routes/analytics');
+const adminRoutes = require('./routes/admin');
 const authMiddleware = require('./middleware/auth');
 const config = require('./config/config');
 require('dotenv').config();
@@ -32,6 +33,7 @@ app.use('/api', authRoutes); // Public route for login/register
 app.use('/api', authMiddleware, contentRoutes); // Protected routes
 app.use('/api', authMiddleware, collaborationRoutes);
 app.use('/api', authMiddleware, analyticsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Connect to MongoDB
 connectDB();
