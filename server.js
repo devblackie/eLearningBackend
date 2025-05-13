@@ -7,6 +7,7 @@ const contentRoutes = require('./routes/content');
 const collaborationRoutes = require('./routes/collaboration');
 const analyticsRoutes = require('./routes/analytics');
 const authMiddleware = require('./middleware/auth');
+const config = require('./config/config');
 require('dotenv').config();
 
 const app = express();
@@ -27,5 +28,5 @@ connectDB();
 // Setup WebSocket
 setupWebSocket(server);
 
-const PORT = process.env.PORT || 5000;
+const PORT = config.port || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
