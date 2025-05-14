@@ -50,4 +50,20 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get current user details
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded._id, 'userId name role');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    res.status(200).json({ user: { userId: user.userId, name: user.name, role: user.role } });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
 module.exports = router;
