@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const multer = require('multer');
 const connectDB = require('./config/db');
 const setupWebSocket = require('./services/websocket');
 const authRoutes = require('./routes/auth');
@@ -27,6 +28,7 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', authRoutes); // Public route for login/register
