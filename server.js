@@ -22,7 +22,7 @@ app.use(cors({
       'http://localhost:5173', // Allow local Vite dev server
     //   'https://elearning-frontend.vercel.app' // Add your Vercel front-end URL
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
 

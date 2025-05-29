@@ -20,11 +20,17 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     if (!file) return cb(null, true);
-    const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'application/pdf'];
+    const allowedTypes = [
+      'image/jpeg', 'image/png', // Images
+      'application/pdf', // PDF
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOC, DOCX
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLS, XLSX
+      'video/mp4', // Videos
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Allowed: JPEG, PNG, MP4, PDF'), false);
+      cb(new Error('Invalid file type. Allowed: JPEG, PNG, PDF, DOC, DOCX, XLS, XLSX, MP4'), false);
     }
   },
 });
@@ -32,13 +38,12 @@ const upload = multer({
 // Get all content
 router.get('/content', authMiddleware, async (req, res) => {
   try {
-    // Validate req.user
     if (!req.user?._id) {
       return res.status(401).json({ error: 'Authentication failed: User not found' });
     }
-
-    // Fetch content
-    const contents = await Content.find().select('contentId title description type fileUrl createdBy version lastUpdated');
+    const contents = await Content.find()
+      .populate('createdBy', 'name') // Populate createdBy with username
+      .select('contentId title description type fileUrl createdBy version lastUpdated');
     res.status(200).json(contents);
   } catch (error) {
     console.error('Error fetching content:', error);
@@ -46,7 +51,7 @@ router.get('/content', authMiddleware, async (req, res) => {
   }
 });
 
-// Upload content (POST /api/content)
+// Upload content
 router.post('/content', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.user?._id) {
@@ -61,17 +66,24 @@ router.post('/content', authMiddleware, upload.single('file'), async (req, res) 
       return res.status(400).json({ error: 'Title and description are required' });
     }
 
-    const validTypes = ['text', 'image', 'video', 'quiz'];
+    const validTypes = ['text', 'image', 'video', 'document'];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: 'Invalid content type. Allowed: text, image, video, quiz' });
+      return res.status(400).json({ error: 'Invalid content type. Allowed: text, image, video, document' });
     }
 
     if (req.file) {
-      if (type === 'video' && !req.file.mimetype.startsWith('video/')) {
-        return res.status(400).json({ error: 'File must be a video (e.g., MP4) for type "video"' });
+      if (type === 'image' && !['image/jpeg', 'image/png'].includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'File must be an image (JPEG, PNG) for type "image"' });
       }
-      if (type === 'image' && !req.file.mimetype.startsWith('image/')) {
-        return res.status(400).json({ error: 'File must be an image (e.g., JPEG, PNG) for type "image"' });
+      if (type === 'video' && req.file.mimetype !== 'video/mp4') {
+        return res.status(400).json({ error: 'File must be a video (MP4) for type "video"' });
+      }
+      if (type === 'document' && ![
+        'application/pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ].includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'File must be a document (PDF, DOC, DOCX, XLS, XLSX) for type "document"' });
       }
     }
 
@@ -79,7 +91,7 @@ router.post('/content', authMiddleware, upload.single('file'), async (req, res) 
     let fileUrl = '';
 
     if (req.file) {
-      const resourceType = type === 'video' ? 'video' : 'image';
+      const resourceType = type === 'video' ? 'video' : type === 'image' ? 'image' : 'raw'; // Use 'raw' for documents
       try {
         const uploadResult = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
@@ -128,7 +140,7 @@ router.post('/content', authMiddleware, upload.single('file'), async (req, res) 
   }
 });
 
-// Update content (PUT /api/content/:contentId)
+// Update content
 router.put('/content/:contentId', authMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.user?._id) {
@@ -142,12 +154,26 @@ router.put('/content/:contentId', authMiddleware, upload.single('file'), async (
     const content = await Content.findOne({ contentId: req.params.contentId });
     if (!content) return res.status(404).json({ error: 'Content not found' });
 
-    if (type && !['text', 'image', 'video', 'quiz'].includes(type)) {
-      return res.status(400).json({ error: 'Invalid content type. Allowed: text, image, video, quiz' });
+    if (type && !['text', 'image', 'video', 'document'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid content type. Allowed: text, image, video, document' });
     }
 
     if (req.file) {
-      const resourceType = type === 'video' ? 'video' : 'image';
+      if (type === 'image' && !['image/jpeg', 'image/png'].includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'File must be an image (JPEG, PNG) for type "image"' });
+      }
+      if (type === 'video' && req.file.mimetype !== 'video/mp4') {
+        return res.status(400).json({ error: 'File must be a video (MP4) for type "video"' });
+      }
+      if (type === 'document' && ![
+        'application/pdf',
+        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ].includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'File must be a document (PDF, DOC, DOCX, XLS, XLSX) for type "document"' });
+      }
+
+      const resourceType = type === 'video' ? 'video' : type === 'image' ? 'image' : 'raw';
       try {
         const uploadResult = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
