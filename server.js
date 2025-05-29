@@ -20,7 +20,7 @@ const server = http.createServer(app);
 app.use(cors({
     origin: [
       'http://localhost:5173', // Allow local Vite dev server
-     'https://ukunda-poly-frontend.vercel.app/' // Add your Vercel front-end URL
+     'https://ukunda-poly-frontend.vercel.app' // Add your Vercel front-end URL
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
