@@ -1,15 +1,21 @@
 const jwt = require('jsonwebtoken');
+  const User = require('../models/User');
 
-const adminAuth = (req, res, next) => {
+const adminAuth = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'No token provided' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
+    const user = await User.findOne({ userId: decoded.userId }); // Query by userId
+    // if (decoded.role !== 'admin') {
+    //   return res.status(403).json({ error: 'Admin access required' });
+    // }
+    // req.user = decoded;
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
     }
-    req.user = decoded;
+    req.user = user; // Attach the user object to the request
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
